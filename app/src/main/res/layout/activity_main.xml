@@ -7,6 +7,14 @@
     android:layout_height="match_parent"
     tools:context="com.infoprogrammer.umovies.MainActivity"
     android:orientation="vertical">
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ListView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"></ListView>
+    </HorizontalScrollView>
     <Button
         android:id="@+id/go_btn"
         android:layout_width="wrap_content"

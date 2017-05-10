@@ -9,6 +9,10 @@ import android.widget.TextView;
 
 import com.infoprogrammer.umovies.Util.Utils;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private HttpURLConnection connection = null;
     private BufferedReader reader = null;
     TextView textView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,8 +45,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    public class Task extends AsyncTask<String, String , String > {
+    public class Task extends AsyncTask<String, String, String> {
 
         @Override
         protected String doInBackground(String... urls) {
@@ -52,20 +56,30 @@ public class MainActivity extends AppCompatActivity {
                 connection.connect();
 
                 InputStream inputStream = connection.getInputStream();
-                reader  = new BufferedReader(new InputStreamReader(inputStream));
+                reader = new BufferedReader(new InputStreamReader(inputStream));
                 StringBuffer stringBuffer = new StringBuffer();
                 String line = "";
 
-                while ((line = reader.readLine()) != null){
+                while ((line = reader.readLine()) != null) {
                     stringBuffer.append(line);
                 }
 
-                return  stringBuffer.toString();
+                String finalJson = stringBuffer.toString();
+
+                    JSONObject parentObject = new JSONObject(finalJson);
+                int page = parentObject.getInt("page");
+                    JSONArray array = parentObject.getJSONArray("results");
+                    JSONObject movie = array.getJSONObject(0);
+                    String title = movie.getString("original_title");
+                    String aboutMovie = movie.getString("overview");
+                return title + "," + aboutMovie;
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
-            }finally {
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
