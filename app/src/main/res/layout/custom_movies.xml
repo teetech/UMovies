@@ -2,27 +2,55 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="5dp">
 
-    <ImageView
-        android:layout_width="120dp"
-        android:layout_height="160dp"
-        android:id="@+id/movie_poster"
-        android:src="@drawable/guardians"/>
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="160dp"
+            android:id="@+id/movie_poster"
+            android:src="@drawable/guardians"/>
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Guardians of the Galaxy Vol. 2"
+            android:id="@+id/title"
             android:textStyle="bold"
-            android:id="@+id/movie_title"/>
+            android:textAppearance="?android:attr/textAppearance"
+            android:text="Gardians of the Galaxy"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingLeft="60dp"
-        android:text="8.2"
-        android:id="@+id/movie_ratting"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/release_date"
+            android:textAppearance="?android:attr/textAppearance"
+            android:text="Release Date"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ratting"
+            android:textAppearance="?android:attr/textAppearance"
+            android:text="Ratting"/>
+
+        <TextView
+            android:id="@+id/overview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="overview"
+            android:textAppearance="?android:attr/textAppearance"
+
+             />
+    </LinearLayout>
+
+
 </LinearLayout>
