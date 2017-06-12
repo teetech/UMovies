@@ -8,13 +8,23 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 
 import Util.Utils;
 import models.NowPlayingMovies;
@@ -30,37 +40,45 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private HttpURLConnection connection = null;
-    private BufferedReader reader = null;
-    TextView textView;
+    private ListView movieList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button hitBt = (Button) findViewById(R.id.go_btn);
-        textView = (TextView) findViewById(R.id.result);
+        DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
 
-        hitBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                new Task().execute(Utils.NOW_PLAYING_URL);
-            }
-        });
+                .cacheInMemory(true)
+                .cacheOnDisk(true)
+                .build();
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
+
+                .defaultDisplayImageOptions(defaultOptions)
+                .discCacheFileNameGenerator(new Md5FileNameGenerator())
+                .tasksProcessingOrder(QueueProcessingType.FIFO)
+                .memoryCache(new WeakMemoryCache())
+                .build();
+        ImageLoader.getInstance().init(config);
+        movieList = (ListView) findViewById(R.id.now_playing_movies);
+
+        new Task().execute(Utils.NOW_PLAYING_URL);
 
     }
 
 
-    public class Task extends AsyncTask<String, String, String> {
+    public class Task extends AsyncTask<String, String, List<NowPlayingMovies>> {
 
         @Override
-        protected String doInBackground(String... urls) {
+        protected List<NowPlayingMovies> doInBackground(String... urls) {
 
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
             try {
                 URL url = new URL(urls[0]);
                 connection = (HttpURLConnection) url.openConnection();
@@ -80,10 +98,21 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject parentObject = new JSONObject(finalJson);
                 int page = parentObject.getInt("page");
                 JSONArray array = parentObject.getJSONArray("results");
-                JSONObject movie = array.getJSONObject(0);
-                String title = movie.getString("original_title");
-                String aboutMovie = movie.getString("overview");
-                return title + "," + aboutMovie;
+
+                List<NowPlayingMovies> movieList = new ArrayList<>();
+
+                for (int i = 0; i < array.length(); i++) {
+                    JSONObject finalObject = array.getJSONObject(i);
+                    NowPlayingMovies nowPlayingMovies = new NowPlayingMovies();
+                    nowPlayingMovies.setMovieTitle(finalObject.getString("original_title"));
+                    nowPlayingMovies.setPoster(finalObject.getString("poster_path"));
+                    nowPlayingMovies.setReleaseDate(finalObject.getString("release_date"));
+                    nowPlayingMovies.setOverview(finalObject.getString("overview"));
+                    nowPlayingMovies.setRatingBar((float) finalObject.getDouble("vote_average"));
+
+                    movieList.add(nowPlayingMovies);
+                }
+                return movieList;
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -106,9 +135,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-            textView.setText(s);
+        protected void onPostExecute(List<NowPlayingMovies> result) {
+            super.onPostExecute(result);
+            MovieAdapter movieAdapter = new MovieAdapter(getApplicationContext(), R.layout.custom_movies, result);
+
+            movieList.setAdapter(movieAdapter);
         }
     }
 
@@ -129,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
             if (convertView == null) {
-                convertView = layoutInflater.inflate(R.layout.custom_movies, null);
+                convertView = layoutInflater.inflate(resource, null);
             }
             ImageView moviePoster;
             TextView movieTile;
@@ -137,22 +168,39 @@ public class MainActivity extends AppCompatActivity {
             RatingBar rating;
             TextView overview;
 
-            moviePoster = (ImageView)findViewById(R.id.movie_poster);
-            movieTile = (TextView)findViewById(R.id.title);
-            releaseDate = (TextView)findViewById(R.id.release_date);
-            rating = (RatingBar)findViewById(R.id.rating);
-            overview = (TextView)findViewById(R.id.overview);
+            moviePoster = (ImageView) convertView.findViewById(R.id.movie_poster);
+            movieTile = (TextView) convertView.findViewById(R.id.title_id);
+            releaseDate = (TextView) convertView.findViewById(R.id.release_date);
+            rating = (RatingBar) convertView.findViewById(R.id.rating);
+            overview = (TextView) convertView.findViewById(R.id.overview);
 
-            movieTile.setText("Title: "+playingMovies.get(position).getMovieTitle());
-            overview.setText("overview: "+playingMovies.get(position).getOverview());
-            releaseDate.setText("Release Date: "+playingMovies.get(position).getReleaseDate());
-            rating.setRating(playingMovies.get(position).getRatingBar()/2);
+            ImageLoader.getInstance().displayImage("https://image.tmdb.org/t/p/w500/" + playingMovies.get(position).getPoster(), moviePoster);
 
-
+            movieTile.setText("Title: " + playingMovies.get(position).getMovieTitle());
+            overview.setText("overview: " + playingMovies.get(position).getOverview());
+            releaseDate.setText("Release Date: " + playingMovies.get(position).getReleaseDate());
+            rating.setRating(playingMovies.get(position).getRatingBar() / 2);
 
 
             return convertView;
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.toolbars, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+        if (id == R.id.reload_id) {
+            new Task().execute(Utils.NOW_PLAYING_URL);
+
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }
