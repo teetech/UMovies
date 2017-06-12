@@ -1,6 +1,8 @@
 package com.infoprogrammer.umovies;
 
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
@@ -16,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
@@ -24,7 +27,9 @@ import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import Util.Utils;
 import models.NowPlayingMovies;
@@ -46,12 +51,19 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private ListView movieList;
+    private ProgressDialog progressDialog;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setIndeterminate(true);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Loading. Please wait...");
         DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
 
                 .cacheInMemory(true)
@@ -73,6 +85,11 @@ public class MainActivity extends AppCompatActivity {
 
 
     public class Task extends AsyncTask<String, String, List<NowPlayingMovies>> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog.show();
+        }
 
         @Override
         protected List<NowPlayingMovies> doInBackground(String... urls) {
@@ -138,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(List<NowPlayingMovies> result) {
             super.onPostExecute(result);
             MovieAdapter movieAdapter = new MovieAdapter(getApplicationContext(), R.layout.custom_movies, result);
-
+            progressDialog.dismiss();
             movieList.setAdapter(movieAdapter);
         }
     }
@@ -173,10 +190,33 @@ public class MainActivity extends AppCompatActivity {
             releaseDate = (TextView) convertView.findViewById(R.id.release_date);
             rating = (RatingBar) convertView.findViewById(R.id.rating);
             overview = (TextView) convertView.findViewById(R.id.overview);
+            final ProgressBar  progressBar = (ProgressBar)convertView.findViewById(R.id.progress_Bar);
 
-            ImageLoader.getInstance().displayImage(Utils.BASIC_URL + playingMovies.get(position).getPoster(), moviePoster);
+            ImageLoader.getInstance().displayImage(Utils.BASIC_URL + playingMovies.get(position).getPoster(), moviePoster, new ImageLoadingListener() {
+                @Override
+                public void onLoadingStarted(String imageUri, View view) {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
 
-            movieTile.setText("Title: " + playingMovies.get(position).getMovieTitle());
+                @Override
+                public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+                    progressBar.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                    progressBar.setVisibility(View.GONE);
+
+                }
+
+                @Override
+                public void onLoadingCancelled(String imageUri, View view) {
+                    progressBar.setVisibility(View.GONE);
+
+                }
+            });
+
+            movieTile.setText(playingMovies.get(position).getMovieTitle());
             overview.setText("overview: " + playingMovies.get(position).getOverview());
             releaseDate.setText("Release Date: " + playingMovies.get(position).getReleaseDate());
             rating.setRating(playingMovies.get(position).getRatingBar() / 2);
