@@ -174,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
             rating = (RatingBar) convertView.findViewById(R.id.rating);
             overview = (TextView) convertView.findViewById(R.id.overview);
 
-            ImageLoader.getInstance().displayImage("https://image.tmdb.org/t/p/w500/" + playingMovies.get(position).getPoster(), moviePoster);
+            ImageLoader.getInstance().displayImage(Utils.BASIC_URL + playingMovies.get(position).getPoster(), moviePoster);
 
             movieTile.setText("Title: " + playingMovies.get(position).getMovieTitle());
             overview.setText("overview: " + playingMovies.get(position).getOverview());
